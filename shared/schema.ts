@@ -6,10 +6,11 @@ import { z } from "zod";
 
 export const locationQueries = pgTable("location_queries", {
   id: serial("id").primaryKey(),
-  latitude: text("latitude").notNull(), // Store as text to preserve precision
+  latitude: text("latitude").notNull(), 
   longitude: text("longitude").notNull(),
   address: text("address"),
   description: text("description").notNull(),
+  events: text("events").array(), // Added to store nearby events
   createdAt: timestamp("created_at").defaultNow(),
 });
 

@@ -24,6 +24,7 @@ export const api = {
         200: z.object({
           description: z.string(),
           address: z.string().optional(),
+          events: z.array(z.string()).optional(),
         }),
         500: errorSchemas.internal,
       },

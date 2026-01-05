@@ -1,38 +1,30 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { db } from "./db";
+import { locationQueries, type InsertLocationQuery, type LocationQuery } from "@shared/schema";
+import { chatStorage, type IChatStorage } from "./replit_integrations/chat/storage";
+import { desc } from "drizzle-orm";
 
-// modify the interface with any CRUD methods
-// you might need
-
-export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+export interface IStorage extends IChatStorage {
+  createLocationQuery(query: InsertLocationQuery): Promise<LocationQuery>;
+  getRecentLocationQueries(): Promise<LocationQuery[]>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
+export class DatabaseStorage implements IStorage {
+  // Inherit chat storage methods
+  getConversation = chatStorage.getConversation;
+  getAllConversations = chatStorage.getAllConversations;
+  createConversation = chatStorage.createConversation;
+  deleteConversation = chatStorage.deleteConversation;
+  getMessagesByConversation = chatStorage.getMessagesByConversation;
+  createMessage = chatStorage.createMessage;
 
-  constructor() {
-    this.users = new Map();
+  async createLocationQuery(query: InsertLocationQuery): Promise<LocationQuery> {
+    const [result] = await db.insert(locationQueries).values(query).returning();
+    return result;
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async getRecentLocationQueries(): Promise<LocationQuery[]> {
+    return await db.select().from(locationQueries).orderBy(desc(locationQueries.createdAt)).limit(10);
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
